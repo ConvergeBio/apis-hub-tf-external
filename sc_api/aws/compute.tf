@@ -109,6 +109,7 @@ resource "aws_instance" "vm_instance" {
   }
 
   tags = merge(var.labels, {
-    "Name" = var.instance_name
+    "Name" = "${var.instance_name}-${var.image_tag}"
+    "Tag"  = var.image_tag
   })
 }
