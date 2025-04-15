@@ -4,11 +4,11 @@
 
 ```hcl
 module "sc_api_gcp" {
-    source = "git::ssh://git@github.com/ConvergeBio/apis-hub-tf-external.git//sc_api/gcp?ref=v0.0.4"
+    source = "git::ssh://git@github.com/ConvergeBio/apis-hub-tf-external.git//sc_api/gcp?ref=<git_tag>"
 
+    image_tag             = "<image_tag>"
     project_id            = "customer-abc-project-123"
     converge_project_id   = "converge-project-123"
-    image_tag             = "0.0.4"
     network               = "default"
     subnetwork            = "default"
     service_account_email = "example@customer-abc-project-123.iam.gserviceaccount.com"    

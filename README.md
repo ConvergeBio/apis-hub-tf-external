@@ -24,7 +24,7 @@ To use a specific solution, reference the appropriate module in your Terraform c
 
 ```hcl
 module "single_cell_aws" {
-  source = "git::ssh://git@github.com/ConvergeBio/apis-hub-tf-external.git//single_cell/terraform/aws?ref=vX.Y.Z"
+  source = "git::ssh://git@github.com/ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=vX.Y.Z"
   
   # Required and optional parameters
   # See the README.md within each module for specific configuration options

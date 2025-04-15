@@ -23,7 +23,7 @@ variable "wandb_api_key" {
 variable "instance_type" {
   description = "EC2 instance type (GPU-enabled instance)"
   type        = string
-  default     = "g4dn.12xlarge"
+  default     = "g6e.12xlarge"
   validation {
     condition     = contains(["p4d.24xlarge", "g6e.48xlarge", "g6e.24xlarge", "g6e.16xlarge", "g6e.12xlarge"], var.instance_type)
     error_message = "The instance_type must be a valid GPU instance type. Allowed values are: p4d.24xlarge, g6e.48xlarge, g6e.24xlarge, g6e.16xlarge, g6e.12xlarge"
