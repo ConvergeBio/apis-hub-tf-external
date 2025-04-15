@@ -1,5 +1,5 @@
 resource "aws_iam_role" "instance_role" {
-  name = "${var.instance_name}-${var.customer_id}-${var.image_tag}-role"
+  name = "${var.instance_name}-${var.customer_id}-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -24,6 +24,6 @@ resource "aws_iam_role_policy_attachment" "permissions" {
 }
 
 resource "aws_iam_instance_profile" "instance_profile" {
-  name = "${var.instance_name}-${var.customer_id}-${var.image_tag}-profile"
+  name = "${var.instance_name}-${var.customer_id}-profile"
   role = aws_iam_role.instance_role.name
 }
