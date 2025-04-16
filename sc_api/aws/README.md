@@ -4,18 +4,18 @@
 
 ```hcl
 module "sc_api_aws" {
-    source = "git::ssh://git@github.com/ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=<git_tag>"
+    source = "git::ssh://git@github.com/ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=v0.0.1"
     
-    image_tag           = "<image_tag>"
-    subnet_id           = "subnet-1234567890"
-    converge_account_id = "123456789012"
-    customer_id         = "customer-abc"
-    wandb_api_key       = "00000000000000000000000000000000"
-    security_group_ids  = ["sg-1234567890"]
+    image_tag           = "0.0.5"
+    subnet_id           = "<subnet_id>"
+    converge_account_id = "<converge_account_id>"
+    customer_id         = "<customer_id>"
+    wandb_api_key       = "<wandb_api_key>"
+    security_group_ids  = ["<security_group_ids>"]
 
     labels = {
-        environment = "production"
-        team        = "data-science" 
+        Environment = "<environment>"
+        Team        = "<team>" 
   }
 }
 ```
