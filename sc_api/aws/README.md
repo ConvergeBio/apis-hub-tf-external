@@ -4,7 +4,7 @@
 
 ```hcl
 module "sc_api_aws" {
-    source = "git::ssh://git@github.com/ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=v0.0.1"
+    source = "git@github.com:ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=v0.0.1"
     
     image_tag           = "0.0.5"
     subnet_id           = "<subnet_id>"
