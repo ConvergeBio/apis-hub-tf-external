@@ -28,4 +28,8 @@ resource "null_resource" "wait_for_container" {
       done
     EOT
   }
+
+  triggers = {
+    image_tag = var.image_tag
+  }
 }
