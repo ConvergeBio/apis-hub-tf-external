@@ -4,8 +4,111 @@ resource "null_resource" "image_tag_tracker" {
   }
 }
 
-resource "null_resource" "wait_for_container" {
+resource "null_resource" "update_container" {
+  triggers = {
+    image_tag = var.image_tag
+  }
+
   depends_on = [aws_instance.vm_instance]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Wait for the instance to be available in SSM
+      echo "Waiting for instance to be available in SSM..."
+      
+      INSTANCE_ID="${aws_instance.vm_instance.id}"
+      REGION="${var.region}"
+      MAX_RETRIES=30
+      RETRY_INTERVAL=10
+      count=0
+      
+      while [[ $count -lt $MAX_RETRIES ]]; do
+        # Check if instance is registered using grep's quiet mode (-q)
+        if aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$INSTANCE_ID" --region "$REGION" --output text | grep -q "$INSTANCE_ID"; then
+          echo "Instance $INSTANCE_ID is registered with SSM."
+          break # Exit loop if found
+        fi
+      
+        # Increment counter and wait
+        count=$((count+1))
+        if [[ $count -ge $MAX_RETRIES ]]; then
+           echo "Error: Timed out waiting for instance $INSTANCE_ID to register with SSM after $MAX_RETRIES attempts."
+           exit 1 # Failure
+        fi
+        echo "Attempt $count/$MAX_RETRIES: Instance not yet registered. Waiting $RETRY_INTERVAL seconds..."
+        sleep $RETRY_INTERVAL
+      done
+
+      # Run the update command through SSM
+      command_id=$(aws ssm send-command \
+        --instance-ids ${aws_instance.vm_instance.id} \
+        --document-name "AWS-RunShellScript" \
+        --parameters 'commands=[
+          "#!/bin/bash",
+          "set -e",
+          "echo \"Updating container to version ${var.image_tag}\"",
+          
+          "# Login to ECR",
+          "aws ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin ${var.converge_account_id}.dkr.ecr.${var.region}.amazonaws.com",
+          
+          "# Pull new image",
+          "docker pull ${local.image_repository}:${var.image_tag}",
+          
+          "# Stop and remove old container",
+          "docker stop ${var.container_name} || true",
+          "docker rm -f ${var.container_name} || true",
+          
+          "# Run new container",
+          "docker run -d \\",
+          "  --name ${var.container_name} \\",
+          "  -e CUSTOMER_ID=\"${var.customer_id}\" \\",
+          "  -e WANDB_API_KEY=\"${var.wandb_api_key}\" \\",
+          "  --gpus all \\",
+          "  -p 8000:8000 \\",
+          "  -v /data:/app/storage \\",
+          "  --log-driver=awslogs \\",
+          "  --log-opt awslogs-region=${var.region} \\",
+          "  --log-opt awslogs-group=${local.log_group_name} \\",
+          "  --log-opt awslogs-stream=${var.instance_name}-container \\",
+          "  --log-opt awslogs-create-group=true \\",
+          "  --restart always \\",
+          "  ${local.image_repository}:${var.image_tag}",
+          
+          "# Wait for container to be ready",
+          "echo \"Waiting for the API to be ready...\"",
+          "until curl --output /dev/null --silent --fail http://localhost:8000/ping; do",
+          "  printf \".\"",
+          "  sleep 5",
+          "done",
+          "echo \"API is ready and responding to health checks!\"",
+          
+          "# Log successful update",
+          "aws logs put-log-events \\",
+          "  --log-group-name \"${local.log_group_name}\" \\",
+          "  --log-stream-name \"${var.instance_name}-container\" \\",
+          "  --log-events timestamp=$(($(date +%s%N)/1000000)),message=\"CONTAINER_UPDATE_COMPLETE_${var.image_tag}\" \\",
+          "  --region \"${var.region}\""
+        ]' \
+        --region ${var.region} \
+        --output text \
+        --query "Command.CommandId")
+      echo "Waiting for SSM command $command_id to complete..."
+      aws ssm wait command-executed --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region}
+      
+      # Check command status
+      status=$(aws ssm get-command-invocation --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region} --query "Status" --output text)
+      if [ "$status" != "Success" ]; then
+        echo "Container update failed with status: $status"
+        exit 1
+      fi
+      
+      echo "Container updated successfully to version ${var.image_tag}"
+    EOT
+  }
+}
+
+resource "null_resource" "wait_for_container" {
+  depends_on = [aws_instance.vm_instance, null_resource.update_container]
 
   provisioner "local-exec" {
     command = <<-EOT
@@ -22,14 +125,15 @@ resource "null_resource" "wait_for_container" {
           echo "Container setup completed successfully"
           exit 0
         fi
+        
+        if echo "$EVENTS" | grep -q "CONTAINER_UPDATE_COMPLETE_${var.image_tag}"; then
+          echo "Container update to version ${var.image_tag} completed successfully"
+          exit 0
+        fi
 
-        echo "Waiting for container setup to complete..."
+        echo "Waiting for container setup/update to complete..."
         sleep 30
       done
     EOT
-  }
-
-  triggers = {
-    image_tag = var.image_tag
   }
 }

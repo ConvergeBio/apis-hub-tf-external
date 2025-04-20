@@ -66,7 +66,7 @@ resource "aws_instance" "vm_instance" {
     # Pull and run the container
     docker pull ${local.image_repository}:${var.image_tag}
     docker run -d \
-    --name converge-sc \
+    --name ${var.container_name} \
     -e CUSTOMER_ID="${var.customer_id}" \
     -e WANDB_API_KEY="${var.wandb_api_key}" \
     --gpus all \
@@ -109,7 +109,7 @@ resource "aws_instance" "vm_instance" {
   }
 
   tags = merge(var.labels, {
-    "Name" = "${var.instance_name}-${var.image_tag}"
+    "Name" = "${var.instance_name}"
     "Tag"  = var.image_tag
   })
 }

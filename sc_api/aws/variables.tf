@@ -10,6 +10,12 @@ variable "instance_name" {
   default     = "converge-sc-vm"
 }
 
+variable "container_name" {
+  description = "The name of the container to run"
+  type        = string
+  default     = "converge-sc"
+}
+
 variable "customer_id" {
   description = "The customer ID used for Model Registry artifacts naming"
   type        = string
