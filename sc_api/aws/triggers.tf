@@ -46,7 +46,7 @@ resource "null_resource" "update_container" {
       command_id=$(aws ssm send-command \
         --instance-ids ${aws_instance.vm_instance.id} \
         --document-name "AWS-RunShellScript" \
-        --parameters 'commands=[
+        --parameters commands='[
           "#!/bin/bash",
           "set -e",
           "echo \"Updating container to version ${var.image_tag}\"",
