@@ -43,15 +43,14 @@ resource "null_resource" "update_container" {
       done
 
       # Run the update command through SSM
+      PARAMS='${local.ssm_payload}'
 
       command_id=$(aws ssm send-command \
       --instance-ids ${aws_instance.vm_instance.id} \
       --document-name "AWS-RunShellScript" \
-      --parameters "$${local.ssm_payload}" \   # <= no single quotes inside!
+      --parameters "$PARAMS" \
       --region ${var.region} \
-      --output text \
-      --query 'Command.CommandId')
-
+      --query 'Command.CommandId' --output text)
       echo "Waiting for SSM command $command_id to complete..."
       aws ssm wait command-executed --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region}
       
