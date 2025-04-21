@@ -43,24 +43,15 @@ resource "null_resource" "update_container" {
       done
 
       # Run the update command through SSM
+
       command_id=$(aws ssm send-command \
-        --instance-ids ${aws_instance.vm_instance.id} \
-        --document-name "AWS-RunShellScript" \
-        --parameters '${jsonencode({
-    commands = [
-      local.ssm_commands.setup,
-      local.ssm_commands.login,
-      local.ssm_commands.check_running,
-      local.ssm_commands.pull_image,
-      local.ssm_commands.stop_container,
-      local.ssm_commands.run_container,
-      local.ssm_commands.wait_for_api,
-      local.ssm_commands.log_completion
-    ]
-})}' \
-        --region ${var.region} \
-        --output text \
-        --query "Command.CommandId")
+      --instance-ids ${aws_instance.vm_instance.id} \
+      --document-name "AWS-RunShellScript" \
+      --parameters "$${local.ssm_payload}" \   # <= no single quotes inside!
+      --region ${var.region} \
+      --output text \
+      --query 'Command.CommandId')
+
       echo "Waiting for SSM command $command_id to complete..."
       aws ssm wait command-executed --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region}
       
@@ -73,7 +64,7 @@ resource "null_resource" "update_container" {
       
       echo "Container updated successfully to version ${var.image_tag}"
     EOT
-}
+  }
 }
 
 resource "null_resource" "wait_for_container" {

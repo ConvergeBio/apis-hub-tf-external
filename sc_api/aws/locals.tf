@@ -56,6 +56,19 @@ locals {
         --region ${var.region}
     EOT
   }
+  ssm_payload = jsonencode({
+    commands = [
+      local.ssm_commands.setup,
+      local.ssm_commands.login,
+      local.ssm_commands.check_running,
+      local.ssm_commands.pull_image,
+      local.ssm_commands.stop_container,
+      local.ssm_commands.run_container,
+      local.ssm_commands.wait_for_api,
+      local.ssm_commands.log_completion
+    ]
+  })
+
   log_group_name   = "/converge/${var.instance_name}-${var.customer_id}-${var.region}"
   image_repository = "${var.converge_account_id}.dkr.ecr.${var.region}.amazonaws.com/converge-sc/api"
 }
