@@ -3,47 +3,16 @@ resource "null_resource" "image_tag_tracker" {
     image_tag = var.image_tag
   }
 }
-
-resource "null_resource" "update_container" {
-  triggers = {
-    image_tag = var.image_tag
-  }
-
+resource "null_resource" "setup_instance" {
   depends_on = [aws_instance.vm_instance]
 
   provisioner "local-exec" {
     command = <<-EOT
       # Wait for the instance to be available in SSM
-      # echo "Will wait 5 minutes for instance to be available in SSM..."
-      # sleep 300 # 5 minutes
-      
-      echo "Checking if instance is registered with SSM..."
-      
-      INSTANCE_ID="${aws_instance.vm_instance.id}"
-      REGION="${var.region}"
-      MAX_RETRIES=30
-      RETRY_INTERVAL=10
-      count=0
-      
-      while [[ $count -lt $MAX_RETRIES ]]; do
-        # Check if instance is registered using grep's quiet mode (-q)
-        if aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$INSTANCE_ID" --region "$REGION" --output text | grep -q "$INSTANCE_ID"; then
-          echo "Instance $INSTANCE_ID is registered with SSM."
-          break # Exit loop if found
-        fi
-      
-        # Increment counter and wait
-        count=$((count+1))
-        if [[ $count -ge $MAX_RETRIES ]]; then
-           echo "Error: Timed out waiting for instance $INSTANCE_ID to register with SSM after $MAX_RETRIES attempts."
-           exit 1 # Failure
-        fi
-        echo "Attempt $count/$MAX_RETRIES: Instance not yet registered. Waiting $RETRY_INTERVAL seconds..."
-        sleep $RETRY_INTERVAL
-      done
+      ${local.ssm_readiness_check}
 
       # Run the update command through SSM
-      PARAMS='${local.ssm_payload}'
+      PARAMS='${local.ssm_setup_payload}'
 
       command_id=$(aws ssm send-command \
       --instance-ids ${aws_instance.vm_instance.id} \
@@ -53,7 +22,46 @@ resource "null_resource" "update_container" {
       --query 'Command.CommandId' --output text)
       echo "Waiting for SSM command $command_id to complete..."
       aws ssm wait command-executed --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region}
+            
+      # Check command status
+      status=$(aws ssm get-command-invocation --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region} --query "Status" --output text)
+      if [ "$status" != "Success" ]; then
+        echo "Container update failed with status: $status"
+        exit 1
+      fi
       
+      echo "Instance setup completed successfully"
+    EOT
+  }
+}
+
+resource "null_resource" "update_container" {
+  triggers = {
+    image_tag = var.image_tag
+  }
+
+  depends_on = [
+    aws_instance.vm_instance,
+    null_resource.setup_instance
+  ]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Wait for the instance to be available in SSM
+      ${local.ssm_readiness_check}
+      
+      # Run the update command through SSM
+      PARAMS='${local.ssm_update_payload}'
+
+      command_id=$(aws ssm send-command \
+      --instance-ids ${aws_instance.vm_instance.id} \
+      --document-name "AWS-RunShellScript" \
+      --parameters "$PARAMS" \
+      --region ${var.region} \
+      --query 'Command.CommandId' --output text)
+      echo "Waiting for SSM command $command_id to complete..."
+      aws ssm wait command-executed --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region}
+            
       # Check command status
       status=$(aws ssm get-command-invocation --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region} --query "Status" --output text)
       if [ "$status" != "Success" ]; then
@@ -67,7 +75,11 @@ resource "null_resource" "update_container" {
 }
 
 resource "null_resource" "wait_for_container" {
-  depends_on = [aws_instance.vm_instance, null_resource.update_container]
+  depends_on = [
+    aws_instance.vm_instance,
+    null_resource.update_container,
+    null_resource.setup_instance
+  ]
 
   provisioner "local-exec" {
     command = <<-EOT
