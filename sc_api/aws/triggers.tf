@@ -14,8 +14,8 @@ resource "null_resource" "update_container" {
   provisioner "local-exec" {
     command = <<-EOT
       # Wait for the instance to be available in SSM
-      echo "Will wait 5 minutes for instance to be available in SSM..."
-      sleep 300 # 5 minutes
+      # echo "Will wait 5 minutes for instance to be available in SSM..."
+      # sleep 300 # 5 minutes
       
       echo "Checking if instance is registered with SSM..."
       
@@ -46,58 +46,18 @@ resource "null_resource" "update_container" {
       command_id=$(aws ssm send-command \
         --instance-ids ${aws_instance.vm_instance.id} \
         --document-name "AWS-RunShellScript" \
-        --parameters commands='[
-          "#!/bin/bash",
-          "set -e",
-          "echo \"Updating container to version ${var.image_tag}\"",
-          
-          "# Login to ECR",
-          "aws ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin ${var.converge_account_id}.dkr.ecr.${var.region}.amazonaws.com",
-
-          # Check if 'correct' image tag is already running
-          if docker ps | grep -q "${local.image_repository}:${var.image_tag}"; then
-            echo "Correct image tag is already running"
-            exit 0
-          fi
-          
-          "# Pull new image",
-          "docker pull ${local.image_repository}:${var.image_tag}",
-          
-          "# Stop and remove old container",
-          "docker stop ${var.container_name} || true",
-          "docker rm -f ${var.container_name} || true",
-          
-          "# Run new container",
-          "docker run -d \\",
-          "  --name ${var.container_name} \\",
-          "  -e CUSTOMER_ID=\"${var.customer_id}\" \\",
-          "  -e WANDB_API_KEY=\"${var.wandb_api_key}\" \\",
-          "  --gpus all \\",
-          "  -p 8000:8000 \\",
-          "  -v /data:/app/storage \\",
-          "  --log-driver=awslogs \\",
-          "  --log-opt awslogs-region=${var.region} \\",
-          "  --log-opt awslogs-group=${local.log_group_name} \\",
-          "  --log-opt awslogs-stream=${var.instance_name}-container \\",
-          "  --log-opt awslogs-create-group=true \\",
-          "  --restart always \\",
-          "  ${local.image_repository}:${var.image_tag}",
-          
-          "# Wait for container to be ready",
-          "echo \"Waiting for the API to be ready...\"",
-          "until curl --output /dev/null --silent --fail http://localhost:8000/ping; do",
-          "  printf \".\"",
-          "  sleep 5",
-          "done",
-          "echo \"API is ready and responding to health checks!\"",
-          
-          "# Log successful update",
-          "aws logs put-log-events \\",
-          "  --log-group-name \"${local.log_group_name}\" \\",
-          "  --log-stream-name \"${var.instance_name}-container\" \\",
-          "  --log-events timestamp=$(($(date +%s%N)/1000000)),message=\"CONTAINER_UPDATE_COMPLETE_${var.image_tag}\" \\",
-          "  --region \"${var.region}\""
-        ]' \
+        --parameters '${jsonencode({
+    commands = [
+      local.ssm_commands.setup,
+      local.ssm_commands.login,
+      local.ssm_commands.check_running,
+      local.ssm_commands.pull_image,
+      local.ssm_commands.stop_container,
+      local.ssm_commands.run_container,
+      local.ssm_commands.wait_for_api,
+      local.ssm_commands.log_completion
+    ]
+})}' \
         --region ${var.region} \
         --output text \
         --query "Command.CommandId")
@@ -113,7 +73,7 @@ resource "null_resource" "update_container" {
       
       echo "Container updated successfully to version ${var.image_tag}"
     EOT
-  }
+}
 }
 
 resource "null_resource" "wait_for_container" {
