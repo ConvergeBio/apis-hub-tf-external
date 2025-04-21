@@ -14,7 +14,10 @@ resource "null_resource" "update_container" {
   provisioner "local-exec" {
     command = <<-EOT
       # Wait for the instance to be available in SSM
-      echo "Waiting for instance to be available in SSM..."
+      echo "Will wait 5 minutes for instance to be available in SSM..."
+      sleep 300 # 5 minutes
+      
+      echo "Checking if instance is registered with SSM..."
       
       INSTANCE_ID="${aws_instance.vm_instance.id}"
       REGION="${var.region}"
