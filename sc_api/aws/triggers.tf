@@ -53,6 +53,12 @@ resource "null_resource" "update_container" {
           
           "# Login to ECR",
           "aws ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin ${var.converge_account_id}.dkr.ecr.${var.region}.amazonaws.com",
+
+          # Check if 'correct' image tag is already running
+          if docker ps | grep -q "${local.image_repository}:${var.image_tag}"; then
+            echo "Correct image tag is already running"
+            exit 0
+          fi
           
           "# Pull new image",
           "docker pull ${local.image_repository}:${var.image_tag}",
