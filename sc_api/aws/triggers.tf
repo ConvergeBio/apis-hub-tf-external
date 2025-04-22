@@ -22,14 +22,49 @@ resource "null_resource" "setup_instance" {
       --region ${var.region} \
       --query 'Command.CommandId' --output text)
       echo "Waiting for SSM command $command_id to complete..."
-      aws ssm wait command-executed --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region}
+      
+      wait_count=0
+      WAIT_MAX_RETRIES=30
+      WAIT_RETRY_INTERVAL=15
+      
+      while [[ $wait_count -lt $WAIT_MAX_RETRIES ]]; do
+        cmd_status=$(aws ssm get-command-invocation \
+          --command-id $command_id \
+          --instance-id ${aws_instance.vm_instance.id} \
+          --region ${var.region} \
+          --query "Status" \
+          --output text 2>/dev/null || echo "Pending")
+        
+        if [[ "$cmd_status" == "Success" ]]; then
+          echo "Command completed successfully."
+          break
+        elif [[ "$cmd_status" == "Failed" || "$cmd_status" == "Cancelled" || "$cmd_status" == "TimedOut" ]]; then
+          echo "Command failed with status: $cmd_status"
+          
+          # Get any error output to aid in diagnostics
+          error_output=$(aws ssm get-command-invocation \
+            --command-id $command_id \
+            --instance-id ${aws_instance.vm_instance.id} \
+            --region ${var.region} \
+            --query "StandardErrorContent" \
+            --output text)
             
-      # Check command status
-      status=$(aws ssm get-command-invocation --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region} --query "Status" --output text)
-      if [ "$status" != "Success" ]; then
-        echo "Container update failed with status: $status"
-        exit 1
-      fi
+          if [[ ! -z "$error_output" ]]; then
+            echo "Error output: $error_output"
+          fi
+          
+          exit 1
+        fi
+        
+        wait_count=$((wait_count+1))
+        if [[ $wait_count -ge $WAIT_MAX_RETRIES ]]; then
+          echo "Error: Timed out waiting for command to complete after $WAIT_MAX_RETRIES attempts."
+          exit 1
+        fi
+        
+        echo "Attempt $wait_count/$WAIT_MAX_RETRIES: Command still in progress. Waiting $WAIT_RETRY_INTERVAL seconds..."
+        sleep $WAIT_RETRY_INTERVAL
+      done
       
       echo "Instance setup completed successfully"
     EOT
@@ -62,14 +97,49 @@ resource "null_resource" "update_container" {
       --region ${var.region} \
       --query 'Command.CommandId' --output text)
       echo "Waiting for SSM command $command_id to complete..."
-      aws ssm wait command-executed --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region}
+      
+      wait_count=0
+      WAIT_MAX_RETRIES=30
+      WAIT_RETRY_INTERVAL=15
+      
+      while [[ $wait_count -lt $WAIT_MAX_RETRIES ]]; do
+        cmd_status=$(aws ssm get-command-invocation \
+          --command-id $command_id \
+          --instance-id ${aws_instance.vm_instance.id} \
+          --region ${var.region} \
+          --query "Status" \
+          --output text 2>/dev/null || echo "Pending")
+        
+        if [[ "$cmd_status" == "Success" ]]; then
+          echo "Command completed successfully."
+          break
+        elif [[ "$cmd_status" == "Failed" || "$cmd_status" == "Cancelled" || "$cmd_status" == "TimedOut" ]]; then
+          echo "Command failed with status: $cmd_status"
+          
+          # Get any error output to aid in diagnostics
+          error_output=$(aws ssm get-command-invocation \
+            --command-id $command_id \
+            --instance-id ${aws_instance.vm_instance.id} \
+            --region ${var.region} \
+            --query "StandardErrorContent" \
+            --output text)
             
-      # Check command status
-      status=$(aws ssm get-command-invocation --command-id $command_id --instance-id ${aws_instance.vm_instance.id} --region ${var.region} --query "Status" --output text)
-      if [ "$status" != "Success" ]; then
-        echo "Container update failed with status: $status"
-        exit 1
-      fi
+          if [[ ! -z "$error_output" ]]; then
+            echo "Error output: $error_output"
+          fi
+          
+          exit 1
+        fi
+        
+        wait_count=$((wait_count+1))
+        if [[ $wait_count -ge $WAIT_MAX_RETRIES ]]; then
+          echo "Error: Timed out waiting for command to complete after $WAIT_MAX_RETRIES attempts."
+          exit 1
+        fi
+        
+        echo "Attempt $wait_count/$WAIT_MAX_RETRIES: Command still in progress. Waiting $WAIT_RETRY_INTERVAL seconds..."
+        sleep $WAIT_RETRY_INTERVAL
+      done
       
       echo "Container updated successfully to version ${var.image_tag}"
     EOT
