@@ -11,7 +11,7 @@ locals {
     INSTANCE_ID="${aws_instance.vm_instance.id}"
     REGION="${var.region}"
     MAX_RETRIES=30
-    RETRY_INTERVAL=15
+    RETRY_INTERVAL=30
     count=0
     
     while [[ $count -lt $MAX_RETRIES ]]; do
@@ -49,7 +49,7 @@ locals {
       echo "Waiting for SSM command $RESULT to complete..."
       wait_count=0
       WAIT_MAX_RETRIES=30
-      WAIT_RETRY_INTERVAL=15
+      WAIT_RETRY_INTERVAL=30
       
       while [[ $wait_count -lt $WAIT_MAX_RETRIES ]]; do
         cmd_status=$(aws ssm get-command-invocation \

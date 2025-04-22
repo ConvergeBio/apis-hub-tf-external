@@ -25,7 +25,7 @@ resource "null_resource" "setup_instance" {
       
       wait_count=0
       WAIT_MAX_RETRIES=30
-      WAIT_RETRY_INTERVAL=15
+      WAIT_RETRY_INTERVAL=30
       
       while [[ $wait_count -lt $WAIT_MAX_RETRIES ]]; do
         cmd_status=$(aws ssm get-command-invocation \
@@ -100,7 +100,7 @@ resource "null_resource" "update_container" {
       
       wait_count=0
       WAIT_MAX_RETRIES=30
-      WAIT_RETRY_INTERVAL=15
+      WAIT_RETRY_INTERVAL=30
       
       while [[ $wait_count -lt $WAIT_MAX_RETRIES ]]; do
         cmd_status=$(aws ssm get-command-invocation \
