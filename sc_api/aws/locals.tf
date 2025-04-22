@@ -30,6 +30,46 @@ locals {
       echo "Attempt $count/$MAX_RETRIES: Instance not yet registered. Waiting $RETRY_INTERVAL seconds..."
       sleep $RETRY_INTERVAL
     done
+
+    # Verify EBS volume is attached and ready
+    echo "Checking if EBS volume is attached and ready..."
+    count=0
+    
+    while [[ $count -lt $MAX_RETRIES ]]; do
+      # Run command to check if the EBS volume is attached and visible
+      RESULT=$(aws ssm send-command \
+        --instance-ids $INSTANCE_ID \
+        --document-name "AWS-RunShellScript" \
+        --comment "${var.instance_name}-${var.customer_id}-check-ebs-attached" \
+        --parameters '{"commands":["lsblk | grep -E \"nvme1n1|xvdh\""]}' \
+        --region $REGION \
+        --output text --query "Command.CommandId")
+      
+      # Wait for command to complete
+      aws ssm wait command-executed --command-id $RESULT --instance-id $INSTANCE_ID --region $REGION
+      
+      # Check the output for the device
+      OUTPUT=$(aws ssm get-command-invocation \
+        --command-id $RESULT \
+        --instance-id $INSTANCE_ID \
+        --region $REGION \
+        --query "StandardOutputContent" \
+        --output text)
+      
+      if [[ ! -z "$OUTPUT" ]]; then
+        echo "EBS volume is attached and visible: $OUTPUT"
+        break
+      fi
+      
+      # Increment counter and wait
+      count=$((count+1))
+      if [[ $count -ge $MAX_RETRIES ]]; then
+         echo "Error: Timed out waiting for EBS volume to be attached after $MAX_RETRIES attempts."
+         exit 1 # Failure
+      fi
+      echo "Attempt $count/$MAX_RETRIES: EBS volume not yet attached. Waiting $RETRY_INTERVAL seconds..."
+      sleep $RETRY_INTERVAL
+    done
   EOT
 
   ssm_setup_commands = {

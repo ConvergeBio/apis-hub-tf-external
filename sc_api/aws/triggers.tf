@@ -17,6 +17,7 @@ resource "null_resource" "setup_instance" {
       command_id=$(aws ssm send-command \
       --instance-ids ${aws_instance.vm_instance.id} \
       --document-name "AWS-RunShellScript" \
+      --comment "${var.instance_name}-${var.customer_id}-initial-setup" \
       --parameters "$PARAMS" \
       --region ${var.region} \
       --query 'Command.CommandId' --output text)
@@ -56,6 +57,7 @@ resource "null_resource" "update_container" {
       command_id=$(aws ssm send-command \
       --instance-ids ${aws_instance.vm_instance.id} \
       --document-name "AWS-RunShellScript" \
+      --comment "${var.instance_name}-${var.customer_id}-update-container-${var.image_tag}" \
       --parameters "$PARAMS" \
       --region ${var.region} \
       --query 'Command.CommandId' --output text)
