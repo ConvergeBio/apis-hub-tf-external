@@ -74,14 +74,12 @@ locals {
 
   ssm_setup_commands = {
     setup = <<-EOT
-      #!/bin/bash -e
+      #!/bin/bash -e -x
       echo "Setting up instance"
     EOT
 
     ebs_mount_script = <<-EOF
-      #!/bin/bash
-      set -e
-      set -x
+      #!/bin/bash -e -x      
       
       # Wait for the EBS volume to be attached and stabilize
       echo "Waiting for EBS volume to be attached..."
@@ -140,7 +138,7 @@ locals {
 
   ssm_update_commands = {
     setup = <<-EOT
-      #!/bin/bash -e
+      #!/bin/bash -e -x
       echo "Updating container to version ${var.image_tag}"
     EOT
 
@@ -160,8 +158,8 @@ locals {
     EOT
 
     stop_container = <<-EOT
-      docker stop ${var.container_name} || true
-      docker rm -f ${var.container_name} || true
+      docker stop ${var.container_name} || true;
+      docker rm -f ${var.container_name} || true;
     EOT
 
     run_container = <<-EOT
