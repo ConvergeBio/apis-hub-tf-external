@@ -176,9 +176,7 @@ locals {
         echo "Correct image tag is already running"; exit 0; fi
     EOT
 
-    pull_image = <<-EOT
-      docker pull ${local.image_repository}:${var.image_tag}
-    EOT
+    pull_image = "docker pull ${local.image_repository}:${var.image_tag}"
 
     stop_container = <<-EOT
       docker stop ${var.container_name} || true;
