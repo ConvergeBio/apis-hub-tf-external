@@ -196,6 +196,7 @@ locals {
         container_id=$(docker run -d --name ${var.container_name} \
           -e CUSTOMER_ID=${var.customer_id} \
           -e WANDB_API_KEY=${var.wandb_api_key} \
+          -e HUGGINGFACE_TOKEN=${var.huggingface_token} \
           --gpus all -p 8000:8000 -v /data:/app/storage \
           --log-driver=awslogs \
           --log-opt awslogs-region=${var.region} \

@@ -7,7 +7,7 @@
 
 ```hcl
 module "sc_api_aws" {
-    source = "git@github.com:ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=v0.0.2"
+    source = "git@github.com:ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=v0.0.3"
     
     image_tag           = "<image_tag>"
     subnet_id           = "<subnet_id>"
@@ -33,8 +33,8 @@ module "sc_api_aws" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 4.67.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | 3.2.3 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 4.0 |
+| <a name="provider_null"></a> [null](#provider\_null) | n/a |
 
 ## Modules
 
@@ -52,6 +52,8 @@ No modules.
 | [aws_instance.vm_instance](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance) | resource |
 | [aws_volume_attachment.data_disk_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/volume_attachment) | resource |
 | [null_resource.image_tag_tracker](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
+| [null_resource.setup_instance](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
+| [null_resource.update_container](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [null_resource.wait_for_container](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [aws_subnet.selected](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/subnet) | data source |
 
@@ -59,14 +61,16 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_container_name"></a> [container\_name](#input\_container\_name) | The name of the container to run | `string` | `"converge-sc"` | no |
 | <a name="input_converge_account_id"></a> [converge\_account\_id](#input\_converge\_account\_id) | The account ID of the Converge account | `string` | n/a | yes |
 | <a name="input_customer_id"></a> [customer\_id](#input\_customer\_id) | The customer ID used for Model Registry artifacts naming | `string` | n/a | yes |
 | <a name="input_disk_size"></a> [disk\_size](#input\_disk\_size) | The size of the disk to attach to the instance | `number` | `1000` | no |
 | <a name="input_enable_public_ip"></a> [enable\_public\_ip](#input\_enable\_public\_ip) | Whether to assign a public IP address to the instance | `bool` | `false` | no |
+| <a name="input_huggingface_token"></a> [huggingface\_token](#input\_huggingface\_token) | The HuggingFace token | `string` | n/a | yes |
 | <a name="input_image_tag"></a> [image\_tag](#input\_image\_tag) | The tag of the container image | `string` | n/a | yes |
 | <a name="input_instance_ami"></a> [instance\_ami](#input\_instance\_ami) | AMI ID for the EC2 instance | `string` | `"ami-08809f9da8c76a5ae"` | no |
 | <a name="input_instance_name"></a> [instance\_name](#input\_instance\_name) | Name for the EC2 instance | `string` | `"converge-sc-vm"` | no |
-| <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type (GPU-enabled instance) | `string` | `"g4dn.12xlarge"` | no |
+| <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type (GPU-enabled instance) | `string` | `"g6e.12xlarge"` | no |
 | <a name="input_key_pair_name"></a> [key\_pair\_name](#input\_key\_pair\_name) | The name of the key pair to use for the instance | `string` | `null` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Tags to apply to the instance | `map(string)` | `{}` | no |
 | <a name="input_region"></a> [region](#input\_region) | AWS region to create resources in | `string` | `"us-east-1"` | no |
