@@ -26,6 +26,11 @@ variable "wandb_api_key" {
   type        = string
 }
 
+variable "huggingface_token" {
+  description = "The HuggingFace token"
+  type        = string
+}
+
 variable "instance_type" {
   description = "EC2 instance type (GPU-enabled instance)"
   type        = string
