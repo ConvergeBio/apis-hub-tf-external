@@ -176,7 +176,30 @@ locals {
         echo "Correct image tag is already running"; exit 0; fi
     EOT
 
-    pull_image = "docker pull ${local.image_repository}:${var.image_tag}"
+    pull_image = <<-EOT
+      MAX_PULL_RETRIES=5
+      pull_retry_count=0
+      
+      while [ $pull_retry_count -lt $MAX_PULL_RETRIES ]; do
+        echo "Pulling container image (attempt $((pull_retry_count+1))/$MAX_PULL_RETRIES)..."
+        
+        if docker pull ${local.image_repository}:${var.image_tag}; then
+          echo "Image pull successful"
+          break
+        fi
+        
+        echo "Failed to pull image on attempt $((pull_retry_count+1))/$MAX_PULL_RETRIES"
+        
+        pull_retry_count=$((pull_retry_count+1))
+        if [ $pull_retry_count -ge $MAX_PULL_RETRIES ]; then
+          echo "ERROR: Failed to pull image after $MAX_PULL_RETRIES attempts"
+          exit 1
+        fi
+        
+        echo "Waiting before retry..."
+        sleep 30  # Longer wait for network issues
+      done
+    EOT
 
     stop_container = <<-EOT
       docker stop ${var.container_name} || true;
