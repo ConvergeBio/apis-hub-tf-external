@@ -13,7 +13,6 @@ module "sc_api_gcp" {
     subnetwork            = "default"
     service_account_email = "example@customer-abc-project-123.iam.gserviceaccount.com"    
     customer_id           = "customer-abc"
-    
     wandb_api_key         = "00000000000000000000000000000000"
 
     labels = {
