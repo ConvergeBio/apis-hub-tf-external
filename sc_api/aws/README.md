@@ -7,13 +7,14 @@
 
 ```hcl
 module "sc_api_aws" {
-    source = "git@github.com:ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=v0.0.3"
+    source = "git@github.com:ConvergeBio/apis-hub-tf-external.git//sc_api/aws?ref=v0.0.4"
     
     image_tag           = "<image_tag>"
     subnet_id           = "<subnet_id>"
     converge_account_id = "<converge_account_id>"
     customer_id         = "<customer_id>"
     wandb_api_key       = "<wandb_api_key>"
+    huggingface_token   = "<hf_api_key>"
     security_group_ids  = ["<security_group_ids>"]
 
     labels = {

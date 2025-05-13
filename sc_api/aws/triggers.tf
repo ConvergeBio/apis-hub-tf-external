@@ -1,12 +1,8 @@
-resource "null_resource" "image_tag_tracker" {
-  triggers = {
-    image_tag = var.image_tag
-  }
-}
 resource "null_resource" "setup_instance" {
   depends_on = [aws_instance.vm_instance]
 
   provisioner "local-exec" {
+    interpreter = [ "bash", "-c" ]
     command = <<-EOT
       # Wait for the instance to be available in SSM
       ${local.ssm_readiness_check}
@@ -82,6 +78,7 @@ resource "null_resource" "update_container" {
   ]
 
   provisioner "local-exec" {
+    interpreter = [ "bash", "-c" ]
     command = <<-EOT
       # Wait for the instance to be available in SSM
       ${local.ssm_readiness_check}
@@ -154,6 +151,7 @@ resource "null_resource" "wait_for_container" {
   ]
 
   provisioner "local-exec" {
+    interpreter = [ "bash", "-c" ]
     command = <<-EOT
       while true; do
         EVENTS=$(aws logs get-log-events \
