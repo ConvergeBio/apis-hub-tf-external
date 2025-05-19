@@ -218,9 +218,10 @@ locals {
         # Run container and store its ID
         container_id=$(docker run -d --name ${var.container_name} \
           -e CUSTOMER_ID=${var.customer_id} \
+          -e APP_VERSION=${var.image_tag} \
           -e WANDB_API_KEY=${var.wandb_api_key} \
           -e HUGGINGFACE_TOKEN=${var.huggingface_token} \
-          --gpus all -p 8000:8000 -v /data:/app/storage \
+          --gpus all -p 8000:8000 -v /data:/app \
           --log-driver=awslogs \
           --log-opt awslogs-region=${var.region} \
           --log-opt awslogs-group=${local.log_group_name} \
