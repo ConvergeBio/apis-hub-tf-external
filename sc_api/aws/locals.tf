@@ -224,6 +224,7 @@ locals {
           --gpus all -p 8000:8000 \
           -v /data:/app/storage \
           -v /data:/app/data \
+          -v /dev/shm/:/dev/shm \
           --log-driver=awslogs \
           --log-opt awslogs-region=${var.region} \
           --log-opt awslogs-group=${local.log_group_name} \
